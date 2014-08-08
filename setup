@@ -100,7 +100,7 @@ function checkSubmodulesCheckedOut(submodules, cb) {
                 run(dir, 'git submodule update', cb);
             } else {
                 run(dir, 'git submodule init', function() {
-                    run(dir, 'git submodule update');
+                    run(dir, 'git submodule update', cb);
                 });
             }
         } else {
