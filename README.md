@@ -11,6 +11,7 @@ build process is fairly complex and tedious, and it all *could* be automated.  T
     * Makes sure the submodules are checked out and up-to-date
     * Sanity checks that the versions of Java and Python are usable
     * Makes sure testng is installed and can be found
+    * Writes correct paths in the magic properties file Avatar's build scripts use to find each other
 
 ### Prerequisites
 
