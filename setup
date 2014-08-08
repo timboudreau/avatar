@@ -99,7 +99,9 @@ function checkSubmodulesCheckedOut(submodules, cb) {
             if (allFound) {
                 run(dir, 'git submodule update', cb);
             } else {
-                run(dir, 'git submodule init', cb);
+                run(dir, 'git submodule init', function() {
+                    run(dir, 'git submodule update');
+                });
             }
         } else {
             fs.exists(path.join(dir, submodules.pop(), '.git'), function (exists) {
