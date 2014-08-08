@@ -1,0 +1,210 @@
+#!/usr/bin/env node
+var fs = require('fs'), path = require('path'), util = require('util'),
+        child_process = require('child_process'), os = require('os');
+
+var args = process.argv.slice(2);
+var clobber = false;
+var dir = path.dirname(module.filename);
+var avatarPropertiesFile = path.join(getUserHome(), '.avatar-js.properties');
+var testngjar = path.join(getUserHome(), '.m2/repository/org/testng/testng/6.8.8/testng-6.8.8.jar');
+var avatarhome = path.join(dir, 'avatar-js~src');
+var distjar = path.join(avatarhome, 'dist', 'avatar-js.jar');
+
+var tests = false;
+for (var i = 0; i < args.length; i++) {
+    tests |= ('--test' === args[i] || '-t' === args[i]);
+    clobber |= ('-y' === args[i] || '--clobber' === args[i]);
+}
+
+function getUserHome() {
+    return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
+}
+
+function exeExists(exe, cb) {
+    console.log('Check that ' + exe + " is installed");
+    var cmdline = 'which ' + exe;
+    child_process.exec(cmdline, function (err, out, stderr) {
+        cb(err);
+    });
+}
+
+function checkExes(exes, cb) {
+    function checkOne() {
+        if (exes.length == 0) {
+            return cb();
+        }
+        var ex = exes.pop();
+        exeExists(ex, function (err) {
+            if (err) {
+                process.stderr.write('Cannot find ' + ex + ' on path');
+                process.exit(2);
+            }
+            setImmediate(checkOne);
+        });
+    }
+    checkOne();
+}
+
+function copy(obj) {
+    var result = {};
+    for (var key in obj) {
+        result[key] = obj[key];
+    }
+    return result;
+}
+
+function appendProp(obj, name, val, sep) {
+    sep = sep || ';';
+    var curr = obj[name];
+    if (typeof curr === 'undefined') {
+        obj[name] = val;
+    } else {
+        obj[name] = curr + sep + val;
+    }
+}
+
+function run(dir, cmd, cb) {
+    console.log('RUN ' + cmd + " in " + dir);
+    var env = copy(process.env);
+    switch (os.platform()) {
+        case 'darwin' :
+            appendProp(env, 'DYLD_LIBRARY_PATH', path.join(dir, 'dist'));
+            break;
+        case 'win32':
+            appendProp(env, 'PATH', path.join(dir, 'dist'), ';');
+            break;
+        case 'linux' :
+        default :
+            appendProp(env, 'LD_LIBRARY_PATH', path.join(dir, 'dist'));
+            break;
+    }
+    var opts = {cwd: dir, encoding: 'utf8', env: env};
+    var proc = child_process.exec(cmd, opts, function (err) {
+        if (err) {
+            process.stderr.write('Failed running ' + cmd + ' in ' + dir + '\n');
+            process.stderr.write(err + '\n');
+            process.exit(1);
+        }
+        cb(err);
+    });
+    proc.stdout.pipe(process.stdout);
+    proc.stderr.pipe(process.stderr);
+}
+
+
+function checkSubmodulesCheckedOut(submodules, cb) {
+    var allFound = true;
+    function checkSubmodule() {
+        if (submodules.length == 0) {
+            if (allFound) {
+                run(dir, 'git submodule update', cb);
+            } else {
+                run(dir, 'git submodule init', cb);
+            }
+        } else {
+            fs.exists(path.join(dir, submodules.pop(), '.git'), function (exists) {
+                if (!exists) {
+                    allFound = false;
+                }
+                setImmediate(checkSubmodule);
+            });
+        }
+    }
+    checkSubmodule();
+}
+
+function checkPythonVersion(cb) {
+    var cmd = 'python --version';
+    var proc = child_process.exec(cmd, function (err, out, stdout) {
+        if (err) {
+            process.stderr.write('Failed running ' + cmd + ' in ' + dir + '\n');
+            process.stderr.write(err + '\n');
+            process.exit(1);
+        }
+        if (!/2\.7/.test(out + '')) {
+            process.stderr.write('Python version must be 2.7.x, but is ' + out);
+            process.stderr.write(err + '\n');
+            process.exit(3);
+        }
+        console.log('Python version is ok: ' + out)
+        cb();
+    });
+    proc.stdout.pipe(process.stdout);
+    proc.stderr.pipe(process.stderr);
+}
+
+function checkJavaVersion(cb) {
+    var cmd = 'java -version';
+    var proc = child_process.exec(cmd, function (err, out, stdout) {
+        if (err) {
+            process.stderr.write('Failed running ' + cmd + ' in ' + dir + '\n');
+            process.stderr.write(err + '\n');
+            process.exit(1);
+        }
+        if (!/1\.8/.test(out + '')) {
+            process.stderr.write('Python version must be 2.7.x, but is ' + out);
+            process.stderr.write(err + '\n');
+            console.log('Java version is ok: ' + out)
+            process.exit(3);
+        }
+        cb();
+    });
+    proc.stdout.pipe(process.stdout);
+    proc.stderr.pipe(process.stderr);
+}
+
+function sanityCheck(cb) {
+    fs.exists(avatarPropertiesFile, function (exists) {
+        if (exists && !clobber) {
+            process.stderr.write('Not overwriting ' + avatarPropertiesFile + ' - delete it or pass -y.\n');
+            process.exit(1);
+        } else {
+            checkPythonVersion(function () {
+                checkJavaVersion(function () {
+                    checkSubmodulesCheckedOut(['avatar-js~http-parser-java', 'avatar-js~libuv-java', 'avatar-js~src'], function () {
+                        checkExes(['mvn', 'ant', 'java', 'python', 'git'], function () {
+                            fs.exists(testngjar, function (exists) {
+                                if (!exists) {
+                                    run(path.join(dir, 'ensure-testng-installed'), 'mvn install', cb);
+                                } else {
+                                    cb();
+                                }
+                            });
+                        });
+                    });
+                });
+            })
+        }
+    });
+}
+
+function install() {
+    console.log('Install with ' + dir);
+    var properties = [
+        'source.home=' + path.join(dir, 'node'),
+        'libuv.home=' + path.join(dir, 'avatar-js~libuv-java'),
+        'http-parser.home=' + path.join(dir, 'avatar-js~http-parser-java'),
+        'avatar-js.home=' + avatarhome,
+        'testng.jar=' + testngjar + '\n'
+    ];
+    fs.writeFile(avatarPropertiesFile, properties.join('\n'), {encoding: 'utf8'}, function (err) {
+        console.log("Wrote " + avatarPropertiesFile + ":\n" + properties.join('\n'));
+        function done() {
+            console.log('*************************************************************')
+            console.log('AvatarJS built and installed successfully');
+        }
+        run(avatarhome, 'ant setup', function () {
+            run(avatarhome, 'ant clean-all', function () {
+                run(avatarhome, 'ant -Dbuild.type=Release jar-all', function () {
+                    if (tests) {
+                        run(avatarhome, 'java -jar ' + distjar + ' src/test/js/test-runner.js test/simple', done);
+                    } else {
+                        done();
+                    }
+                });
+            });
+        });
+    });
+}
+
+sanityCheck(install);
