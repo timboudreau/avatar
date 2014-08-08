@@ -114,14 +114,15 @@ function checkSubmodulesCheckedOut(submodules, cb) {
 }
 
 function checkPythonVersion(cb) {
+    console.log('Checking Python version (must be 2.7.x)')
     var cmd = 'python --version';
-    var proc = child_process.exec(cmd, function (err, out, stdout) {
+    var proc = child_process.exec(cmd, function (err, out, stderr) {
         if (err) {
             process.stderr.write('Failed running ' + cmd + ' in ' + dir + '\n');
             process.stderr.write(err + '\n');
             process.exit(1);
         }
-        if (!/2\.7/.test(out + '')) {
+        if (!/2\.7/.test(stderr + '')) {
             process.stderr.write('Python version must be 2.7.x, but is ' + out);
             process.stderr.write(err + '\n');
             process.exit(3);
@@ -129,28 +130,25 @@ function checkPythonVersion(cb) {
         console.log('Python version is ok: ' + out)
         cb();
     });
-    proc.stdout.pipe(process.stdout);
-    proc.stderr.pipe(process.stderr);
 }
 
 function checkJavaVersion(cb) {
+    console.log('Checking Java version (must be 1.8.x)');
     var cmd = 'java -version';
-    var proc = child_process.exec(cmd, function (err, out, stdout) {
+    var proc = child_process.exec(cmd, function (err, out, stderr) {
         if (err) {
             process.stderr.write('Failed running ' + cmd + ' in ' + dir + '\n');
             process.stderr.write(err + '\n');
             process.exit(1);
         }
-        if (!/1\.8/.test(out + '')) {
-            process.stderr.write('Python version must be 2.7.x, but is ' + out);
+        if (!/1\.8/.test(stderr + '') && !/1\.9/.test(stderr + '')) {
+            process.stderr.write('Java version must be 2.7.x, but is ' + out);
             process.stderr.write(err + '\n');
-            console.log('Java version is ok: ' + out)
             process.exit(3);
         }
+        console.log('Java version is ok: ' + out)
         cb();
     });
-    proc.stdout.pipe(process.stdout);
-    proc.stderr.pipe(process.stderr);
 }
 
 function sanityCheck(cb) {
