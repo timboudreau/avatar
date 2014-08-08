@@ -2,7 +2,7 @@ Avatar
 ======
 
 This project is simply a convenient way to build all of [AvatarJS](https://avatar-js.java.net/) - the
-build process is fairly complex and tedious, and it all *could* be automated.  This process does that.  
+build process is fairly complex and tedious, and it all *could* be automated.  This project does that.  
 
 ### What It Does
 
