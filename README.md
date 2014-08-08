@@ -27,6 +27,11 @@ build process is fairly complex and tedious, and it all *could* be automated.  T
 
 Just clone this repository, cd into the directory and run `./setup`
 
+The `setup` script takes a couple of optional arguments:
+
+  * `-y` or `--clobber` - overwrite `$HOME/.avatar-js.properties`, which Avatar's build scripts depend on to find various projects.  If that file exists and you do not pass this argument, the script will tell you that and exit
+  * `-t` or `--test` - run the tests after building (takes a while)
+
 ### Status
 
 Definitely works on Linux, should work on Mac OS, might work on Windows if run from cygwin.
