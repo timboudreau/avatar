@@ -2,7 +2,10 @@ Avatar
 ======
 
 This project is simply a convenient way to build all of [AvatarJS](https://avatar-js.java.net/) - the
-build process is fairly complex and tedious, and it all *could* be automated.  This project does that.  
+build process is fairly complex and tedious, and it all *could* be automated.  This project does that.
+
+AvatarJS is a Java implementation of [NodeJS](http://nodejs.org).  This project just makes that easier
+to install.
 
 ### What It Does
 
@@ -12,6 +15,7 @@ build process is fairly complex and tedious, and it all *could* be automated.  T
     * Sanity checks that the versions of Java and Python are usable
     * Makes sure testng is installed and can be found
     * Writes correct paths in the magic properties file Avatar's build scripts use to find each other
+ * Generates a script named `avatar` which will launch AvatarJS the same way running `node` does with native NodeJS
 
 ### Prerequisites
 
@@ -22,6 +26,7 @@ build process is fairly complex and tedious, and it all *could* be automated.  T
     * Python - Per avatar's build instructions, must be 2.7.x
     * Ant - in order to build Avatar
     * Git - in order to initialize submodules
+    * A C compiler (gcc on linux, other platforms may vary)
     * the venerable unix command `which`
 
 ### Running it

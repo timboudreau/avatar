@@ -99,7 +99,7 @@ function checkSubmodulesCheckedOut(submodules, cb) {
             if (allFound) {
                 run(dir, 'git submodule update', cb);
             } else {
-                run(dir, 'git submodule init', function() {
+                run(dir, 'git submodule init', function () {
                     run(dir, 'git submodule update', cb);
                 });
             }
@@ -190,8 +190,37 @@ function install() {
     fs.writeFile(avatarPropertiesFile, properties.join('\n'), {encoding: 'utf8'}, function (err) {
         console.log("Wrote " + avatarPropertiesFile + ":\n" + properties.join('\n'));
         function done() {
-            console.log('*************************************************************')
-            console.log('AvatarJS built and installed successfully');
+            var distDir = path.join(avatarhome, 'dist');
+            var distJar = path.join(distDir, 'avatar-js.jar');
+            var script;
+            var scriptName = path.join(dir, 'avatar');
+            var chmod = true;
+            switch (os.platform()) {
+                case 'darwin' :
+                    script = '#!\bin\sh\nDYLD_LIBRARY_PATH=' + distDir + ' java -Djava.library.path=' + distDir + ' -jar ' + distJar + ' $1 $2 $3 $4 $5 $6 $7 $8 $9';
+                    break;
+                case 'win32':
+                    chmod = false;
+                    var scriptName = path.join(dir, 'avatar.bat');
+                    // XXX args on windows batch script?
+                    script = 'PATH=%PATH%;' + distDir + ' java -Djava.library.path=' + distDir + ' -jar ' + distJar + ' %~1 %~2 %~3 %~4 %~5 %~6 %~7 %~8 %~9';
+                    break;
+                case 'linux' :
+                default :
+                    script = '#!\bin\sh\nDYLD_LIBRARY_PATH=' + distDir + ' java -Djava.library.path=' + distDir + ' -jar ' + distJar + ' $1 $2 $3 $4 $5 $6 $7 $8 $9';
+                    break;
+            }
+            fs.writeFile(scriptName, script, {encoding: 'utf8'}, function (err) {
+                if (err) {
+                    throw new Error("Failed writing " + scriptName + ":\n" + err);
+                }
+                if (chmod) {
+                    fs.chmod(scriptName, '0755', function (err) {
+                        console.log('*************************************************************')
+                        console.log('AvatarJS built and installed successfully');
+                    });
+                }
+            });
         }
         run(avatarhome, 'ant setup', function () {
             run(avatarhome, 'ant clean-all', function () {
