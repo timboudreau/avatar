@@ -1,0 +1,12 @@
+[submodule "avatar-js~src"]
+	path = avatar-js~src
+	url = git://java.net/avatar-js~src
+[submodule "avatar-js~libuv-java"]
+	path = avatar-js~libuv-java
+	url = git://java.net/avatar-js~libuv-java
+[submodule "avatar-js~http-parser-java"]
+	path = avatar-js~http-parser-java
+	url = git://java.net/avatar-js~http-parser-java
+[submodule "node"]
+	path = node
+	url = https://github.com/joyent/node.git
